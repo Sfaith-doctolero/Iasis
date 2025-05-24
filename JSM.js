@@ -1,7 +1,14 @@
-// SECTION 1: Hospital Configuration Constants
-// These constants define the static data for the hospital system.
-// They are placed at the top as they are fundamental to the system's operation.
+//JSM HEALTH SOLUTIONS
+//1st Section: Hospital Configuration Constants
+//Static data for the hospital system.
+//Placed at the top for easy access and modification
+//Core Data Parameters
+//for various functions throughtout the system 
 
+// Hospital_Services (Nested object) - contains arrayswhich in turn contain other objects
+// hospital service => object  which has operations & surgeries etc, as keys which value is an array 
+// inside the arrays arethe objects that contains key-value pairs
+//Use of name and price keys throughout is allowed because they are defined locally within each individual service object, not globally.
 const HOSPITAL_SERVICES = {
     "Operations & Surgeries": [
         { name: "Appendectomy", price: 50000 },
@@ -64,7 +71,9 @@ const HOSPITAL_SERVICES = {
     ]
 };
 
-// Helper to flatten all services into a single array for multi-selection
+//Helper to flatten all services into a single array for multi-selection
+//Hospital Services is structured as an object where the keys are service categories 
+//values are arrays of service objects
 const ALL_HOSPITAL_SERVICES_FLAT = Object.values(HOSPITAL_SERVICES).flat();
 const ALL_HOSPITAL_SERVICE_NAMES_FLAT = ALL_HOSPITAL_SERVICES_FLAT.map(s => s.name);
 
@@ -82,7 +91,7 @@ const HOSPITAL_DEPARTMENTS = {
     "Pulmonology": ["Bronchoscopy"],
     "Emergency Department": ["Trauma", "Poisoning", "Severe Allergic Reaction", "Loss of Consciousness", "Acute Abdominal Pain", "Chest Pain (Non-Cardiac)"],
     "Rehabilitation Medicine": ["Physical Therapy (Post-Op)", "Occupational Therapy (Post-Stroke)", "Speech Therapy"],
-    "Psychiatry": ["Dr. Peter Sy"] // Note: Dr. Peter Sy is only listed under Psychiatry department, not tied to a service here
+    "Psychiatry": ["Dr. Peter "] //Psychiatry department, not tied to a service here
 };
 
 const HOSPITAL_DOCTORS = {
@@ -94,11 +103,11 @@ const HOSPITAL_DOCTORS = {
     "Internal Medicine": ["Dr. Frank Tan", "Dr. Grace Lee", "Dr. Henry Dela Cruz"],
     "Neurology": ["Dr. Irene Salazar"],
     "Gastroenterology": ["Dr. Joseph Kim"],
-    "Radiology": ["Dr. Karen Wong"],
+    "Radiology": ["Dr. Karen Cortez"],
     "Pulmonology": ["Dr. Liam Ocampo"],
     "Emergency Department": ["Dr. Mia Perez", "Dr. Noah Reyes"],
-    "Rehabilitation Medicine": ["Dr. Olivia Chen"],
-    "Psychiatry": ["Dr. Peter Sy"]
+    "Rehabilitation Medicine": ["Dr. Olivia Rodrigo"],
+    "Psychiatry": ["Dr. Taylor Swift"]
 };
 
 const HOSPITAL_ROOMS = {
@@ -145,7 +154,7 @@ const ONLINE_PAYMENT_OPTIONS = [
     "Bank Transfer ",
     "Other E-Wallet"
 ];
-
+//Probable card options
 const CARD_TYPE_OPTIONS = [
     "Visa",
     "Mastercard",
@@ -154,14 +163,46 @@ const CARD_TYPE_OPTIONS = [
 ];
 
 // Defines the structure and validation rules for all input fields.
+//validation is handled by a general purpose validation function (getValidatedInput)
+// it uses the rules defined within the ADMISSION_PROCESS_CONFIG
 const ADMISSION_PROCESS_CONFIG = {
     "Patient Demographics": {
         "Identification": {
+            //use type to dictate Prompt formatting
+            //getValidatedInput function uses type to customize the prompt message 
+            //for instance type:text - expects string 
+            //type:generated - it is something that the the system creates not a user input
+            //use of RegEx to follow format and not allow invalid inputs
+
+
+            //Process of flow 
+            // getValidatedInput recieves a fieldConfig argument.
+            //Inside getValidated info are conditional statements that value of the fieldConfig.type and it is programmed to react based on what type it finds 
+
+            //clarification for type
+            // getValidated is an assistant that collect information and the fieldConfig is a set of instructions you hand to it 
+            //e.g. fieldConfigType is select
+            // Instruction: type:"select", options: ["Male, "Female"]
+            //fieldConfig.options - system gives user the option and prompts user to choose 
+            //if the option is valid then the system will convert the number ti an actual option 1- male, 2 - female
+
+            //discussion for input 
+            // Patient ID - key and acts as a placeholder for the actual patient id
+            // when the admissionprocess runs the actualy patient id will then be stored under this key 
+            // {} - object literal, every value associated with their individual keys will be stored here 
+            // during admission when system reaches "identification" the processDubcategory function will then iterate through the fields defined in admission process config 
+            // when it encounters then the certain key, it will tehn read the associated value (user input)
+           
+            // getValidatedInput uses required to check for ields that requires input
+            //RegEx (/^[A-Za-z\s.'-]+$/) - find specific pattern to follow 
+            //.test search for same pattern throughout the string 
+            //.trim removes whitespace characters
             "Patient ID": { type: "generated", label: "Unique Patient ID" },
             "Patient Last Name": { type: "text", required: true, validation: (input) => /^[A-Za-z\s.'-]+$/.test(input.trim()) && input.trim().length > 0, errorMessage: "Please enter a valid last name (letters, spaces, hyphens, apostrophes, periods only)." },
             "Patient First Name": { type: "text", required: true, validation: (input) => /^[A-Za-z\s.'-]+$/.test(input.trim()) && input.trim().length > 0, errorMessage: "Please enter a valid first name (letters, spaces, hyphens, apostrophes, periods only)." },
             "Patient Middle Name": { type: "text", required: false, validation: (input) => input === "" || /^[A-Za-z\s.'-]+$/.test(input.trim()), errorMessage: "Please enter a valid middle name or leave blank." },
             "Patient Suffix (e.g., Jr., III)": { type: "text", required: false, validation: (input) => input === "" || /^[A-Za-z\s.'-]+$/.test(input.trim()), errorMessage: "Please enter a valid suffix or leave blank." },
+            //new Date() - if input is valid it will create a date object representing the birthdate
             "Date of Birth": {
                 type: "date",
                 required: true,
@@ -236,7 +277,7 @@ const ADMISSION_PROCESS_CONFIG = {
                 type: "datetime-custom",
                 required: true,
                 validation: (input) => /^\d{4}-\d{2}-\d{2} ([01]\d|2[0-3]):([0-5]\d)$/.test(input),
-                errorMessage: "Please enter Admission Date/Time in YYYY-MM-DD HH:MM format (e.g., 2025-05-23 14:30)."
+                errorMessage: "Please enter Admission Date/Time in YYYY-MM-DD :MM format (e.g., 2025-05-23 14:30)."
             },
             "Expected Length of Stay (Days)": { type: "number", required: false, validation: (input) => input === "" || (Number(input) > 0 && Number.isInteger(Number(input))), errorMessage: "Please enter a valid whole number of days." },
             "Room Type Preference": { type: "select", options: Object.keys(HOSPITAL_ROOMS), required: true }
@@ -278,8 +319,15 @@ function normalizeInput(input) {
 function getValidatedInput(message, fieldConfig) {
     let input;
     let isValid = false;
+//fieldConfig.options.length makes sure that the input of the user is valid and is in the options
+// fieldConfig.options.map((option, index) =>${index + 1}. ${option}).join('\n')
+// is used to dynamically generate a neatly formatted, numbered list for the user to choose from when a "select" type field is encountered.
 
-    while (!isValid) {
+//prpcess
+//fiedlConfig.options shows choices by accessing the array
+//.map() iterates over each transforming them into new string with associated numbers 
+//join('n\') takes the new array of numbered string and combines them into single long one, insertinga new line character between 
+while (!isValid) {
         let promptMessage = message;
         if (fieldConfig.type === "select" || fieldConfig.type === "select-dynamic") {
             promptMessage += "\n" + fieldConfig.options.map((option, index) => `${index + 1}. ${option}`).join('\n') + `\nEnter the number:`;
@@ -325,7 +373,9 @@ function getValidatedInput(message, fieldConfig) {
             input = '';
             continue;
         }
-
+//.filter removes empty strings
+//.some checks atleast one option is valid 
+//throw normal flow interrupted  and control transfers to catch 
         if (fieldConfig.type === "select" || fieldConfig.type === "select-dynamic") {
             const parsedInput = parseInt(input);
             if (!isNaN(parsedInput) && parsedInput >= 1 && parsedInput <= fieldConfig.options.length) {
@@ -912,7 +962,7 @@ function displayAdmissionSummary(admissionData, billDetails, paymentInfo = null)
             currentAdmissionData = {}; // Reset for new patient
             currentBillDetails = {}; // Reset for new patient
 
-            alert("Welcome to the Hospital Admission System!\n\nThis system will guide you through the patient admission process.");
+            alert("Welcome to the JSM Health Solutions!\n\nThis system will guide you through the patient admission process.");
 
             try {
                 // Process each main category of the admission form
