@@ -323,10 +323,11 @@ function getValidatedInput(message, fieldConfig) {
 // fieldConfig.options.map((option, index) =>${index + 1}. ${option}).join('\n')
 // is used to dynamically generate a neatly formatted, numbered list for the user to choose from when a "select" type field is encountered.
 
-//prpcess
-//fiedlConfig.options shows choices by accessing the array
+//process
+//fieldlConfig.options shows choices by accessing the array
 //.map() iterates over each transforming them into new string with associated numbers 
 //join('n\') takes the new array of numbered string and combines them into single long one, insertinga new line character between 
+// consist of the prompt message for input validdation formats 
 while (!isValid) {
         let promptMessage = message;
         if (fieldConfig.type === "select" || fieldConfig.type === "select-dynamic") {
@@ -346,6 +347,7 @@ while (!isValid) {
         } else if (fieldConfig.type === "datetime-custom") {
             promptMessage += ` (Format: YYYY-MM-DD HH:MM, e.g., 2025-05-23 14:30)`;
         }
+        //promptMessage variable that holds al the text you want to show inside the pop-up box
 
         input = prompt(promptMessage);
         if (input === null) {
@@ -420,6 +422,8 @@ while (!isValid) {
                 if (otherInput.trim() === '' && fieldConfig.required) {
                     alert("You selected 'Other', but did not specify any condition. Please provide details or unselect 'Other'.");
                     continue;
+                // if continue is executed inside the while loop it immediately stop the current iteratioon and jumps back to the beginning 
+                // the user will then be prompted to correcctly specify the "Other" choice of theirs.
                 }
                 if (otherInput.trim() !== '') {
                     chosenOptions.push(...otherInput.split(',').map(s => s.trim()).filter(s => s !== ''));
@@ -458,6 +462,10 @@ while (!isValid) {
     }
     return input;
 }
+//gathers reason for admission 
+//code prepares a fieldConfig for a select type input- options derived from Hospital_Services
+//user is prompted to choose a category based getvalidatedinput require: true or false
+// users chose category is then stored i the subcategoryData under key "Admission Category"
 
 function getAdmissionServiceDetails(subcategoryData) {
     let allSelectedServices = []; // This will store all service objects
@@ -466,17 +474,22 @@ function getAdmissionServiceDetails(subcategoryData) {
     const categoryConfig = { type: "select", options: Object.keys(HOSPITAL_SERVICES), required: true };
     const admissionCategory = getValidatedInput(`Select primary reason for admission category:`, categoryConfig);
     subcategoryData["Admission Category"] = admissionCategory;
-
+//after broad category the user is prompted to choose specifics(exact service)
     // 2. Prompt for the specific primary service within that category
     const servicesForCategory = HOSPITAL_SERVICES[admissionCategory] || [];
     if (servicesForCategory.length === 0) {
         alert(`No services found for category: ${admissionCategory}. Please select another category or manually add a service.`);
         // Fallback for cases where a category has no pre-defined services
+        // akert user,then switches to a type:text input
+        //a service object will then be created that will be added and stored in subcategoryData under specific/condition and to allselectedservices/.
+
         const primaryServiceConfig = { type: "text", required: true, validation: (input) => input.trim().length > 0, errorMessage: "Please specify the primary service/condition." };
         const primaryServiceName = getValidatedInput("Enter the specific primary service/condition:", primaryServiceConfig);
         const primaryService = { name: primaryServiceName, price: 0 }; // Assume 0 price if manually entered
         subcategoryData["Specific Service/Condition"] = primaryService;
         allSelectedServices.push(primaryService);
+        //service exist for the chosen category 
+        //Formatted options will be shown and will require user input. input will then be stored the same. 
     } else {
         const serviceOptions = servicesForCategory.map(s => `${s.name} (₱${s.price.toLocaleString()})`);
         const primaryServiceConfig = { type: "select", options: serviceOptions, required: true };
@@ -488,7 +501,11 @@ function getAdmissionServiceDetails(subcategoryData) {
         allSelectedServices.push(primaryService);
     }
 
-    // 3. Loop to add additional services
+    //Loop to add additional services(palanning for multiple availed services)
+    //user answers with Y or N stands for yes or no (Boolean Options)
+    //you can then add several services 
+    //customeprocessor- mini processor takes instead of the generel one during the addition of services 
+    //general one can only prompt once 
     let addMoreServices = true;
     const additionalServices = [];
 
@@ -586,6 +603,7 @@ function getAdmissionServiceDetails(subcategoryData) {
 
 
     // --- Determine Admitting Doctor based on ALL selected services ---
+    //iterates to every selected services and in every service it checks every department for the matched one tp chppse a doctor. 
     let potentialDepartments = [];
     allSelectedServices.forEach(service => {
         for (const dept in HOSPITAL_DEPARTMENTS) {
@@ -676,7 +694,7 @@ function processCategory(categoryName, subcategories) {
     }
     return categoryData;
 }
-
+// calculste bill depends on the chose inputs 
 function calculateBill(admissionData) {
     let serviceCost = 0;
     let roomCost = 0;
@@ -722,11 +740,11 @@ function calculateBill(admissionData) {
         expectedLengthOfStay: expectedLengthOfStay,
     };
 }
-
+//display the summary of the bill that the user needs to pay to successfully schedule the admission
 function displayPrePaymentBillSummary(billDetails) {
     let billSummary = "\n--- Detailed Bill Summary (Before Payment) ---\n";
     billSummary += `1. Medical Services Charge:\n`;
-
+//shows the bill for the services availed
     if (billDetails.allAvailedServices && billDetails.allAvailedServices.length > 0) {
         billSummary += `- Services Availed:\n`;
         billDetails.allAvailedServices.forEach(svc => {
@@ -738,7 +756,7 @@ function displayPrePaymentBillSummary(billDetails) {
     billSummary += `- Total Service Cost: ₱${billDetails.serviceCost.toLocaleString()}\n`;
     billSummary += `- Description: This charge covers professional fees, use of specialized medical equipment, medical supplies, and facility usage related to all selected services.\n`;
 
-
+//shows the detailed summary of the Room Accomodation
     billSummary += `\n2. Room Accommodation Charge:\n`;
     if (billDetails.roomType && billDetails.roomDetails) {
         billSummary += `- Room Type: ${billDetails.roomType}\n`;
@@ -768,14 +786,15 @@ function displayPrePaymentBillSummary(billDetails) {
 
     billSummary += `\nTOTAL AMOUNT DUE (After Discount): ₱${billDetails.finalAmount.toLocaleString()}\n`;
     billSummary += `\nPlease review these charges before proceeding to payment.\n`;
-
+//display bill summary
     alert(billSummary);
 }
-
+//shows the option for the payment method options
+//options consist of cash, online, and card
 function processPayment(amountDue) {
     alert(`\n--- Proceed to Payment ---
 Your total bill is: ₱${amountDue.toLocaleString()}
-
+// 
 Please choose your payment method to complete the admission.`);
 
     const paymentMethodConfig = {
@@ -825,20 +844,45 @@ Please choose your payment method to complete the admission.`);
                     required: true,
                     validation: (input) => {
                         const parts = input.split('/');
-                        if (parts.length !== 2 || parts[0].length !== 2 || parts[1].length !== 2) return false;
-                        const month = parseInt(parts[0], 10);
-                        const year = parseInt(parts[1], 10) + 2000; // Assuming 2-digit year like 25 -> 2025
-                        const lowerBoundYear = 24; // Assuming it's at least 2024 (YY format)
-                        const upperBoundYear = 35; // Allowing cards up to 2035 (YY format)
-                
-                        if (year < lowerBoundYear || year > upperBoundYear) {
+                        // Basic format check (MM/YY, e.g., 03/25)
+                        if (parts.length !== 2 || parts[0].length !== 2 || parts[1].length !== 2) {
                             return false;
                         }
-                
-                        // If all checks pass
-                        return true;
+
+                        const month = parseInt(parts[0], 10);
+                        const yearShort = parseInt(parts[1], 10); // e.g., 25 for 2025
+
+                        // Month range check
+                        if (isNaN(month) || isNaN(yearShort) || month < 1 || month > 12) {
+                            return false;
+                        }
+
+                        // Get current date components
+                        const currentDate = new Date();
+                        const currentYear = currentDate.getFullYear(); // e.g., 2025
+                        const currentMonth = currentDate.getMonth() + 1; // getMonth() is 0-indexed (e.g., May is 4, so +1 makes it 5)
+
+
+                        const expiryYearFull = (yearShort < (currentYear % 100) + 20) ? (2000 + yearShort) : (1900 + yearShort);
+                       
+
+                        // Check if the card has already expired
+                        //If expiry year is before current year OR
+                        //If expiry year is the same as current year, but expiry month is before current month
+                        if (expiryYearFull < currentYear || (expiryYearFull === currentYear && month < currentMonth)) {
+                            return false; // Card is expired
+                        }
+
+                     //upper limit to prevent typos that result in extremely far-future dates
+                        //disallow cards valid more than 15 years from now
+                        const maxValidYear = currentYear + 15;
+                        if (expiryYearFull > maxValidYear) {
+                            return false; // Expiry date too far in the future (likely a typo)
+                        }
+
+                        return true; // All checks pass, date is valid and not expired
                     },
-                    errorMessage: "Please enter a valid expiry date in MM/YY format (e.g., 01/28)."
+                    errorMessage: "Please enter a valid expiry date in MM/YY format (e.g., 01/28) and ensure it is not expired or too far in the future."
                 });
                 const cardCVV = getValidatedInput("Enter CVV:", {
                     type: "text",
@@ -867,7 +911,7 @@ Please choose your payment method to complete the admission.`);
     alert(`Payment of ₱${amountDue.toLocaleString()} successful! Transaction ID: ${transactionDetails.transactionId}`);
     return transactionDetails;
 }
-
+//show summary of the code 
 function displayAdmissionSummary(admissionData, billDetails, paymentInfo = null) {
     let summary = "\n--- Admission Summary ---\n";
 
@@ -962,7 +1006,7 @@ function displayAdmissionSummary(admissionData, billDetails, paymentInfo = null)
             currentAdmissionData = {}; // Reset for new patient
             currentBillDetails = {}; // Reset for new patient
 
-            alert("Welcome to the JSM Health Solutions!\n\nThis system will guide you through the patient admission process.");
+            alert("Welcome to the JSM Health Solutions Admission System!\n\nThis system will guide you through the patient admission process.");
 
             try {
                 // Process each main category of the admission form
@@ -1000,7 +1044,7 @@ function displayAdmissionSummary(admissionData, billDetails, paymentInfo = null)
                 }
             }
         }
-        alert("Hospital Admission System closed. Goodbye!");
+        alert("JSM Health Solutions Admission System closed. Goodbye!");
     }
     startAdmissionProcess();
 })();
